@@ -1,3 +1,6 @@
+# Simulation Code for Medical Imaging and Robotic Instrumentation
+# Project by: Hitanshu Shah and Kyle Mitchell
+
 import pybullet as p
 import pybullet_data
 import scipy
