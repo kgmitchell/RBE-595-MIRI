@@ -1,5 +1,5 @@
 # RBE-595-MIRI
-Simulation for Medical Imaging and Robotic instrumentation
+Simulation for Medical Imaging and Robotic Instrumentation
 
 Instructions:<br />
 Note - Steps labeled (SETUP) are for first time only. Subsequent cycles do not need these steps again.<br />
