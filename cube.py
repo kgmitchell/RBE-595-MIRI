@@ -24,7 +24,7 @@ def create_hospital_environment(tumor_pose):
     headVisualId = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius, rgbaColor=[0, 0, 1, 1])
     headObjId = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=headId, baseVisualShapeIndex=headVisualId, basePosition=[0, 0, 0])
 
-    fixed_base_position = [1, -1.0, 0]  # Adjust as needed
+    fixed_base_position = [-1, -1.0, 0]  # Adjust as needed
     fake_base_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=-1, baseVisualShapeIndex=-1,
                                     basePosition=fixed_base_position, baseOrientation=[0, 0, 0, 1])
 
@@ -73,7 +73,7 @@ distance_between_head_and_screen = 0.9
 line_id = p.addUserDebugLine([0, 0, 0], [0, 0, 0], [0, 1, 0], 2)
 
 # Set camera parameters
-p.resetDebugVisualizerCamera(cameraDistance=3, cameraYaw=45, cameraPitch=-30, cameraTargetPosition=[0, -1, 0])
+p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=140, cameraPitch=-30, cameraTargetPosition=[0, -1, 0])
 
 try:
     for tx, ty, tz, rx, ry, rz in head_tracking_data:
