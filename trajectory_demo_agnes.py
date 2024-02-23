@@ -1,7 +1,9 @@
 import pybullet as pb
 import pybullet_data
-from drivers.solver.solver_agnes import Ik_solver_agnes
-from drivers.planner.planner import Planner
+import solver_agnes
+import planner
+from solver_agnes import Ik_solver_agnes
+from planner import Planner
 import time
 import numpy as np
 
@@ -58,7 +60,7 @@ if __name__ == '__main__':
     ground = pb.loadURDF('plane.urdf')
     #table = pb.loadURDF('table/table.urdf') 
     cube = pb.loadURDF('cube.urdf', basePosition = [1.5, 0.0, 0.125], globalScaling = 0.25)
-    agnes_urdf = pb.loadURDF('/URDF/agnes.urdf.xml', useFixedBase=1)
+    agnes_urdf = pb.loadURDF('agnes.urdf.xml', useFixedBase=1)
     
     # Instanciating an Agnes robot
     agnes = Agnes(agnes_urdf, 0.01, 0.485, 1.0, 0.74, 0.257564970)

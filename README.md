@@ -14,9 +14,13 @@ Note - Steps labeled (SETUP) are for first time only. Subsequent cycles do not n
     *conda install -c conda-forge pybullet*
 6. (SETUP) Install scipy<br />
     *pip install scipy*
-6. Navigate to file/folder/repository<br />
+7. (SETUP) Install driver<br />
+    *pip install driver*
+8. (SETUP) Install transforms3d<br />
+    *pip install transforms3d*
+9. Navigate to file/folder/repository<br />
     *cd DIRECTORY*
-7. Run script<br />
+10. Run script<br />
     *python simulation.py*
 
 
