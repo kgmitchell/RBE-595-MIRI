@@ -7,7 +7,6 @@ import csv
 
 # Existing functions and variables
 def create_hospital_environment(tumor_pose):
-
     # Create yellow tumor sphere
     sphere_radius = 0.1
     tumorId = p.createCollisionShape(p.GEOM_SPHERE, radius=sphere_radius)
@@ -25,11 +24,29 @@ def create_hospital_environment(tumor_pose):
     headVisualId = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius, rgbaColor=[0, 0, 1, 1])
     headObjId = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=headId, baseVisualShapeIndex=headVisualId, basePosition=[0, 0, 0])
 
-    #return leftWallId, rightWallId, backWallId, frontWallId, tumorObjId, screenObjId, headObjId
-    return tumorObjId, screenObjId, headObjId
+    fixed_base_position = [0, 0, 0]  # Adjust as needed
+    fake_base_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=-1, baseVisualShapeIndex=-1,
+                                    basePosition=fixed_base_position, baseOrientation=[0, 0, 0, 1])
+
+    # Load the robot URDF
+    robot_urdf_path = "agnes.urdf.xml"  # Adjust as needed
+    robotStartPos = [0, 0, 0]  # Adjust as needed
+    robotStartOrn = p.getQuaternionFromEuler([0, 0, 0])  # Adjust as needed
+    robotId = p.loadURDF(robot_urdf_path, robotStartPos, robotStartOrn)
+
+    # Fix the robot base to the ground
+    p.createConstraint(parentBodyUniqueId=fake_base_id, parentLinkIndex=-1, childBodyUniqueId=robotId,
+                   childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
+                   parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
+    
+    screen_link_index = 5  # Adjust according to the URDF
+    p.createConstraint(parentBodyUniqueId=robotId, parentLinkIndex=screen_link_index, childBodyUniqueId=screenObjId,
+                       childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
+                       parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
+    
+    return tumorObjId, screenObjId, headObjId, robotId
 
 def update_line(line_id, start_point, end_point):
-
     p.addUserDebugLine(start_point, end_point, [0, 1, 0], 2, replaceItemUniqueId=line_id)
 
 def euler_to_quaternion(euler):
@@ -40,7 +57,7 @@ p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
 tumor_pose = [0, 0, 0.7]
-tumorObjId, screenObjId, headObjId = create_hospital_environment(tumor_pose)
+tumorObjId, screenObjId, headObjId, robotId = create_hospital_environment(tumor_pose)
 
 # Load head tracking data from CSV file
 head_tracking_data = []
@@ -52,9 +69,7 @@ with open('head_tracking.csv', 'r') as file:
         rx, ry, rz, tx, ty, tz = map(float, row)
         head_tracking_data.append((tx * scaling_factor, ty * scaling_factor, tz * scaling_factor, rx, ry, rz))
 
-
 distance_between_head_and_screen = 0.9
-
 line_id = p.addUserDebugLine([0, 0, 0], [0, 0, 0], [0, 1, 0], 2)
 
 # Set camera parameters
