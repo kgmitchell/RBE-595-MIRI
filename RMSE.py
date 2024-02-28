@@ -21,8 +21,8 @@ def create_hospital_environment(tumor_pose):
     screenObjId = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=screenId, baseVisualShapeIndex=screenVisualId, basePosition=[0, 0, 0])
 
     # # Create blue head sphere
-    headId = p.createCollisionShape(p.GEOM_SPHERE, radius=sphere_radius)
-    headVisualId = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius, rgbaColor=[0, 0, 1, 1])
+    headId = p.createCollisionShape(p.GEOM_SPHERE, radius=sphere_radius*1.5)
+    headVisualId = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius*1.5, rgbaColor=[0, 0, 1, 1])
     headObjId = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=headId, baseVisualShapeIndex=headVisualId, basePosition=[0, 0, 0])
 
     # stick_figure_urdf_path = "stick.urdf.xml"
@@ -37,21 +37,21 @@ def create_hospital_environment(tumor_pose):
 
     # Load the robot URDF
     robot_urdf_path = "agnes.urdf.xml"  # Adjust as needed
-    robotStartPos = [0, 0, 2.5]  # Adjust as needed
+    robotStartPos = [0, 0.2, 2.5]  # Adjust as needed
     #for step in range(0, 211, 30):
     #    print(step)
-    robotStartOrn = p.getQuaternionFromEuler([0, (180*3.14159/180), (-90*3.14159/180)])  # Adjust as needed
-    robotId = p.loadURDF(robot_urdf_path, robotStartPos, robotStartOrn, useFixedBase=1, globalScaling = 1)
+    robotStartOrn = p.getQuaternionFromEuler([0, (180*3.14159/180), (0*3.14159/180)])  # Adjust as needed
+    robotId = p.loadURDF(robot_urdf_path, robotStartPos, robotStartOrn, useFixedBase=1, globalScaling = 1.2)
 
     # Fix the robot base to the ground
     #p.createConstraint(parentBodyUniqueId=fake_base_id, parentLinkIndex=-1, childBodyUniqueId=robotId,
     #               childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
     #               parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
     
-    #screen_link_index = 5  # Adjust according to the URDF
-    #p.createConstraint(parentBodyUniqueId=robotId, parentLinkIndex=screen_link_index, childBodyUniqueId=screenObjId,
-    #                   childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
-    #                   parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
+    screen_link_index = 5  # Adjust according to the URDF
+    p.createConstraint(parentBodyUniqueId=robotId, parentLinkIndex=screen_link_index, childBodyUniqueId=screenObjId,
+                       childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
+                       parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
     
     return tumorObjId, screenObjId, headObjId, robotId
 
@@ -93,7 +93,7 @@ with open('head_tracking.csv', 'r') as file:
         rx, ry, rz, tx, ty, tz = map(float, row)
         head_tracking_data.append((tx * scaling_factor, ty * scaling_factor, tz * scaling_factor, rx, ry, rz))
 
-distance_between_head_and_screen = 0.9
+distance_between_head_and_screen = 0.4
 line_id = p.addUserDebugLine([0, 0, 0], [0, 0, 0], [0, 1, 0], 2)
 
 # Set camera parameters
@@ -134,12 +134,12 @@ try:
 
         update_line(line_id, tumor_pose, headPos)
 
-        o = screenPos
-        rpy = screen_orientation_matrix.as_euler('xyz', degrees=True)
-        my_solver = Ik_solver_agnes(0.485, 1.0, 0.74, 0.254374022)
-        q = my_solver.solve(o, rpy, -1)
-        p.setJointMotorControlArray(robotId, range(6), p.POSITION_CONTROL, targetPositions = q)
-        q_aux, rpy_aux = my_solver._forward_kinematics(q)
+        #o = screenPos
+        #rpy = screen_orientation_matrix.as_euler('xyz', degrees=False)
+        #my_solver = Ik_solver_agnes(0.485, 1.0, 0.74, 0.254374022)
+        #q = my_solver.solve(o, rpy, -1)
+        #q.setJointMotorControlArray(robotId, range(6), p.POSITION_CONTROL, targetPositions = q)
+        #q_aux, rpy_aux = my_solver._forward_kinematics(q)
 
         time.sleep(1 / 240)
         p.stepSimulation()
@@ -148,6 +148,7 @@ try:
 
         # Append simulated data to list
         simulated_data.append([tx, ty, tz])  # Replace with your actual simulated data
+        
 
 except KeyboardInterrupt:
     pass

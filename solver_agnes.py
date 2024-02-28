@@ -19,8 +19,8 @@ class Ik_solver_agnes:
         rt = self._rpy2r(rpy)
         xc, yc, zc = self._wrist_center(o, rt)
         print(rt)
-        print(xc, "  ", yc, "  ", zc)
-        q1, q2, q3 = self._body_ik(xc, yc, zc, conf)
+        print(-xc, "  ", yc, "  ", zc)
+        q1, q2, q3 = self._body_ik(xc, -yc, zc, conf)
         q4, q5, q6 = self._wrist_ik(q1, q2, q3, rt)
 
         #o, rpy = self._forward_kinematics([q1, q2, q3, q4, q5, q6])
