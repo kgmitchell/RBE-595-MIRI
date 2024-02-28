@@ -18,6 +18,8 @@ class Ik_solver_agnes:
         '''
         rt = self._rpy2r(rpy)
         xc, yc, zc = self._wrist_center(o, rt)
+        print(rt)
+        print(xc, "  ", yc, "  ", zc)
         q1, q2, q3 = self._body_ik(xc, yc, zc, conf)
         q4, q5, q6 = self._wrist_ik(q1, q2, q3, rt)
 
@@ -49,6 +51,7 @@ class Ik_solver_agnes:
         Regresa los valores articulares q1, q2 y q3
         '''
         D = -(xc**2 + yc**2 + (zc - self._d1)**2 - self._a2**2 - self._d4**2)/(2*self._a2*self._d4)
+        print(D)
 
         q3 = np.arctan2(D, conf*np.sqrt(1 - D**2))
         q2 = np.arctan2(zc - self._d1, np.sqrt(xc**2 + yc**2)) - np.arctan2(self._d4*cos(q3), self._a2 - self._d4*sin(q3))

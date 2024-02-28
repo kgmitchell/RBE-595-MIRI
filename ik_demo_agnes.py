@@ -15,7 +15,7 @@ pb.setAdditionalSearchPath(pybullet_data.getDataPath())
 ground = pb.loadURDF('plane.urdf')
 #table = pb.loadURDF('table/table.urdf') 
 cube = pb.loadURDF('cube.urdf', basePosition = [1.75, 0.0, 0.25], globalScaling = 0.5)
-elbow = pb.loadURDF('URDF/agnes.urdf.xml', useFixedBase=1)
+elbow = pb.loadURDF('agnes.urdf.xml', useFixedBase=1)
 
 print('\n')
 # Inverse kinematics Position 1

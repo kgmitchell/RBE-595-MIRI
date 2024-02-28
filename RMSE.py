@@ -1,5 +1,6 @@
 import pybullet as p
 import pybullet_data
+from solver_agnes import Ik_solver_agnes
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 import time
@@ -30,25 +31,27 @@ def create_hospital_environment(tumor_pose):
     # headObjId = p.loadURDF(stick_figure_urdf_path, stick_figure_start_pos, stick_figure_start_orientation)
 
 
-    fixed_base_position = [-1, -1.0, 0]  # Adjust as needed
-    fake_base_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=-1, baseVisualShapeIndex=-1,
-                                    basePosition=fixed_base_position, baseOrientation=[0, 0, 0, 1])
+    #fixed_base_position = [0, -0.35, 2.5]  # Adjust as needed
+    #fake_base_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=-1, baseVisualShapeIndex=-1,
+    #                                basePosition=fixed_base_position, baseOrientation=[0, 0, 0, 1])
 
     # Load the robot URDF
     robot_urdf_path = "agnes.urdf.xml"  # Adjust as needed
-    robotStartPos = [0, 0, 0]  # Adjust as needed
-    robotStartOrn = p.getQuaternionFromEuler([0, 0, 0])  # Adjust as needed
-    robotId = p.loadURDF(robot_urdf_path, robotStartPos, robotStartOrn)
+    robotStartPos = [0, 0, 2.5]  # Adjust as needed
+    #for step in range(0, 211, 30):
+    #    print(step)
+    robotStartOrn = p.getQuaternionFromEuler([0, (180*3.14159/180), (-90*3.14159/180)])  # Adjust as needed
+    robotId = p.loadURDF(robot_urdf_path, robotStartPos, robotStartOrn, useFixedBase=1, globalScaling = 1)
 
     # Fix the robot base to the ground
-    p.createConstraint(parentBodyUniqueId=fake_base_id, parentLinkIndex=-1, childBodyUniqueId=robotId,
-                   childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
-                   parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
+    #p.createConstraint(parentBodyUniqueId=fake_base_id, parentLinkIndex=-1, childBodyUniqueId=robotId,
+    #               childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
+    #               parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
     
-    screen_link_index = 5  # Adjust according to the URDF
-    p.createConstraint(parentBodyUniqueId=robotId, parentLinkIndex=screen_link_index, childBodyUniqueId=screenObjId,
-                       childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
-                       parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
+    #screen_link_index = 5  # Adjust according to the URDF
+    #p.createConstraint(parentBodyUniqueId=robotId, parentLinkIndex=screen_link_index, childBodyUniqueId=screenObjId,
+    #                   childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
+    #                   parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
     
     return tumorObjId, screenObjId, headObjId, robotId
 
@@ -76,6 +79,20 @@ with open('head_tracking.csv', 'r') as file:
         rx, ry, rz, tx, ty, tz = map(float, row)
         head_tracking_data.append((tx * scaling_factor, ty * scaling_factor, tz * scaling_factor, rx, ry, rz))
 
+with open('head_tracking.csv', 'r') as file:
+    reader = csv.reader(file)
+    next(reader)  # Skip header row
+    for row in reader:
+        rx, ry, rz, tx, ty, tz = map(float, row)
+        head_tracking_data.append((tx * scaling_factor, ty * scaling_factor, tz * scaling_factor, rx, ry, rz))
+
+with open('head_tracking.csv', 'r') as file:
+    reader = csv.reader(file)
+    next(reader)  # Skip header row
+    for row in reader:
+        rx, ry, rz, tx, ty, tz = map(float, row)
+        head_tracking_data.append((tx * scaling_factor, ty * scaling_factor, tz * scaling_factor, rx, ry, rz))
+
 distance_between_head_and_screen = 0.9
 line_id = p.addUserDebugLine([0, 0, 0], [0, 0, 0], [0, 1, 0], 2)
 
@@ -84,12 +101,11 @@ p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=140, cameraPitch=-30, c
 
 # Initialize simulated data list
 simulated_data = []
-
+temp = 0
 try:
     for tx, ty, tz, rx, ry, rz in head_tracking_data:
-        time.sleep(1 / 240)
-        p.stepSimulation()
-
+        #while(True):
+        #    temp = temp + 1
         headPos = [tx, ty, tz]
         p.resetBasePositionAndOrientation(headObjId, headPos, euler_to_quaternion([rx, ry, rz]))
 
@@ -117,6 +133,18 @@ try:
         p.resetBasePositionAndOrientation(screenObjId, screenPos.tolist(), screen_orientation_quat.tolist())
 
         update_line(line_id, tumor_pose, headPos)
+
+        o = screenPos
+        rpy = screen_orientation_matrix.as_euler('xyz', degrees=True)
+        my_solver = Ik_solver_agnes(0.485, 1.0, 0.74, 0.254374022)
+        q = my_solver.solve(o, rpy, -1)
+        p.setJointMotorControlArray(robotId, range(6), p.POSITION_CONTROL, targetPositions = q)
+        q_aux, rpy_aux = my_solver._forward_kinematics(q)
+
+        time.sleep(1 / 240)
+        p.stepSimulation()
+
+
 
         # Append simulated data to list
         simulated_data.append([tx, ty, tz])  # Replace with your actual simulated data
