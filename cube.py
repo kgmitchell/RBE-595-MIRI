@@ -1,5 +1,6 @@
 import pybullet as p
 import pybullet_data
+from solver_agnes import Ik_solver_agnes
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 import time
@@ -19,30 +20,21 @@ def create_hospital_environment(tumor_pose):
     screenVisualId = p.createVisualShape(p.GEOM_BOX, halfExtents=screen_size, rgbaColor=[1, 0, 0, 1])
     screenObjId = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=screenId, baseVisualShapeIndex=screenVisualId, basePosition=[0, 0, 0])
 
-    # Create blue head sphere
-    headId = p.createCollisionShape(p.GEOM_SPHERE, radius=sphere_radius)
-    headVisualId = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius, rgbaColor=[0, 0, 1, 1])
+    # # Create blue head sphere
+    headId = p.createCollisionShape(p.GEOM_SPHERE, radius=sphere_radius*1.5)
+    headVisualId = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius*1.5, rgbaColor=[0, 0, 1, 1])
     headObjId = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=headId, baseVisualShapeIndex=headVisualId, basePosition=[0, 0, 0])
 
-    fixed_base_position = [-1, -1.0, 0]  # Adjust as needed
-    fake_base_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=-1, baseVisualShapeIndex=-1,
-                                    basePosition=fixed_base_position, baseOrientation=[0, 0, 0, 1])
-
     # Load the robot URDF
-    robot_urdf_path = "agnes.urdf.xml"  # Adjust as needed
-    robotStartPos = [0, 0, 0]  # Adjust as needed
-    robotStartOrn = p.getQuaternionFromEuler([0, 0, 0])  # Adjust as needed
-    robotId = p.loadURDF(robot_urdf_path, robotStartPos, robotStartOrn)
-
-    # Fix the robot base to the ground
-    p.createConstraint(parentBodyUniqueId=fake_base_id, parentLinkIndex=-1, childBodyUniqueId=robotId,
-                   childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
-                   parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
+    robot_urdf_path = "agnes.urdf.xml"
+    robotStartPos = [-0.6, 0, 2.5]  
+    robotStartOrn = p.getQuaternionFromEuler([0, (180*3.14159/180), 180])  
+    robotId = p.loadURDF(robot_urdf_path, robotStartPos, robotStartOrn, useFixedBase=1, globalScaling = 1)
     
-    screen_link_index = 5  # Adjust according to the URDF
+    screen_link_index = 5  
     p.createConstraint(parentBodyUniqueId=robotId, parentLinkIndex=screen_link_index, childBodyUniqueId=screenObjId,
                        childLinkIndex=-1, jointType=p.JOINT_FIXED, jointAxis=[0, 0, 0],
-                       parentFramePosition=[0, 0, 0], childFramePosition=[0, 0, 0])
+                       parentFramePosition=[0, 0, 0], childFramePosition=[-0.35, 0, 0])
     
     return tumorObjId, screenObjId, headObjId, robotId
 
@@ -69,17 +61,17 @@ with open('head_tracking.csv', 'r') as file:
         rx, ry, rz, tx, ty, tz = map(float, row)
         head_tracking_data.append((tx * scaling_factor, ty * scaling_factor, tz * scaling_factor, rx, ry, rz))
 
-distance_between_head_and_screen = 0.9
+distance_between_head_and_screen = 0.5
 line_id = p.addUserDebugLine([0, 0, 0], [0, 0, 0], [0, 1, 0], 2)
 
 # Set camera parameters
-p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=140, cameraPitch=-30, cameraTargetPosition=[0, -1, 0])
+p.resetDebugVisualizerCamera(cameraDistance=4.5, cameraYaw=120, cameraPitch=-30, cameraTargetPosition=[0, -1, 0])
 
+# Initialize simulated data list
+simulated_data = []
+temp = 0
 try:
     for tx, ty, tz, rx, ry, rz in head_tracking_data:
-        time.sleep(1 / 240)
-        p.stepSimulation()
-
         headPos = [tx, ty, tz]
         p.resetBasePositionAndOrientation(headObjId, headPos, euler_to_quaternion([rx, ry, rz]))
 
@@ -107,8 +99,37 @@ try:
         p.resetBasePositionAndOrientation(screenObjId, screenPos.tolist(), screen_orientation_quat.tolist())
 
         update_line(line_id, tumor_pose, headPos)
+        time.sleep(1 / 240)
+        p.stepSimulation()
+        # Append simulated data to list
+        simulated_data.append([tx, ty, tz])  
+        
 
 except KeyboardInterrupt:
     pass
 
 p.disconnect()
+
+# Convert simulated data and head tracking data to numpy arrays
+simulated_data = np.array(simulated_data)
+head_tracking_data = np.array(head_tracking_data)
+
+# Extract position data from head tracking data
+head_tracking_position = head_tracking_data[:, :3]
+
+# Check if the arrays are not empty before performing operations
+if simulated_data.size != 0 and head_tracking_position.size != 0:
+    # Calculate RMSE for each dimension (X, Y, Z)
+    rmse_x = np.sqrt(np.mean((simulated_data[:, 0] - head_tracking_position[:, 0]) ** 2))
+    rmse_y = np.sqrt(np.mean((simulated_data[:, 1] - head_tracking_position[:, 1]) ** 2))
+    rmse_z = np.sqrt(np.mean((simulated_data[:, 2] - head_tracking_position[:, 2]) ** 2))
+
+    # Calculate overall RMSE
+    overall_rmse = np.sqrt(np.mean((simulated_data - head_tracking_position) ** 2))
+
+    print("Root Mean Square Error (RMSE) for X dimension:", rmse_x)
+    print("Root Mean Square Error (RMSE) for Y dimension:", rmse_y)
+    print("Root Mean Square Error (RMSE) for Z dimension:", rmse_z)
+    print("Overall Root Mean Square Error (RMSE):", overall_rmse)
+else:
+    print("Error: Simulated data or head tracking data is empty.")
